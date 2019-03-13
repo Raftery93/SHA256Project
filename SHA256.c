@@ -56,23 +56,16 @@ void sha256(){
         sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
     }
 
+    //Step 2
+    //Initialize a, b, c, d, e, g, h
+    a = H[0];
+    b = H[1];
+    c = H[2];
+    d = H[3];
+    e = H[4];
+    f = H[5];
+    g = H[6];
+    h = H[7];
+
     
-
-}
-
-uint32_t rotr(uint32_t n, uint32_t x){
-    return (x >> n | x << (32-n));
-}
-
-uint32_t shr(uint32_t n, uint32_t x){
-    return (x >> n);
-}
-
-
-uint32_t sig0(uint32_t x){
-    return (rotr(7, x) ^ rotr(18, x) ^ shr(3, x));
-}
-
-uint32_t sig1(uint32_t x){
-    return (rotr(17, x) ^ rotr(19, x) ^ shr(10, x));
 }
