@@ -1,8 +1,9 @@
+//Conor Raftery G00274094
+
 //Input/output header file
 #include <stdio.h>
 //Fixed bit length integers
 #include <stdint.h>
-
 
 void sha256();
 
@@ -19,7 +20,6 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
-
 void sha256(){
 
     int t;
@@ -32,7 +32,6 @@ void sha256(){
     uint32_t H[8];
     //Two temporary variables
     uint32_t T1, T2;
-
     
     uint32_t h[8] = {
         0x6a09e667,
@@ -48,11 +47,11 @@ void sha256(){
     //The current message block
     uint32_t M[16];
 
-    for(t = 0; t<16;t++){
+    for(t = 0; t < 16; t++){
         W[t] = M[t];
     } 
 
-    for(t = 16; t<64;t++){
+    for(t = 16; t < 64; t++){
         sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
     }
 
