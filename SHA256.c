@@ -67,5 +67,36 @@ void sha256(){
     g = H[6];
     h = H[7];
 
-    
+    //Step 3
+    for(t = 0; t<64;t++){
+        T1 = h + SIG_1(e) + Ch(e, f, g) + K[t] + W[t];
+        T2 = SIG_0(a) + Maj(a, b, c);
+        h = g;
+        g = f;
+        f = e;
+        e = d + T1;
+        d = c;
+        c = b;
+        b = a;
+        a = T1 + T2;
+    }
+
+
+}
+
+uint32_t rotr(uint32_t n, uint32_t x){
+    return (x >> n | x << (32-n));
+}
+
+uint32_t shr(uint32_t n, uint32_t x){
+    return (x >> n);
+}
+
+
+uint32_t sig0(uint32_t x){
+    return (rotr(7, x) ^ rotr(18, x) ^ shr(3, x));
+}
+
+uint32_t sig1(uint32_t x){
+    return (rotr(17, x) ^ rotr(19, x) ^ shr(10, x));
 }
