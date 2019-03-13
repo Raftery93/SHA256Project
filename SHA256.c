@@ -13,6 +13,13 @@ uint32_t sig1(uint32_t x);
 uint32_t rotr(uint32_t n, uint32_t x);
 uint32_t shr(uint32_t n, uint32_t x);
 
+uint32_t SIG0(uint32_t x);
+uint32_t SIG1(uint32_t x);
+
+uint32_t Ch(uint32_t x, uint32_t y, uint32_t z);
+uint32_t Maj(uint32_t x, uint32_t y, uint32_t z);
+
+
 int main(int argc, char *argv[]){
     
     sha256();
@@ -22,18 +29,18 @@ int main(int argc, char *argv[]){
 
 void sha256(){
 
+    
+
     int t;
 
     //Message schedule
     uint32_t W[64];
     //Working variables
     uint32_t a, b, c, d, e, f, g, h;
-    //The hash value
-    uint32_t H[8];
     //Two temporary variables
     uint32_t T1, T2;
-    
-    uint32_t h[8] = {
+    //The hash value
+    uint32_t H[8] = {
         0x6a09e667,
         0xbb67ae85,
         0x3c6ef372,
@@ -52,7 +59,7 @@ void sha256(){
     } 
 
     for(t = 16; t < 64; t++){
-        sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
+        W[t] = sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
     }
 
     //Step 2
@@ -67,9 +74,9 @@ void sha256(){
     h = H[7];
 
     //Step 3
-    for(t = 0; t<64;t++){
-        T1 = h + SIG_1(e) + Ch(e, f, g) + K[t] + W[t];
-        T2 = SIG_0(a) + Maj(a, b, c);
+    for(t = 0; t < 64; t++){
+        T1 = h + SIG1(e) + Ch(e, f, g) + K[t] + W[t];
+        T2 = SIG0(a) + Maj(a, b, c);
         h = g;
         g = f;
         f = e;
@@ -107,4 +114,21 @@ uint32_t sig0(uint32_t x){
 
 uint32_t sig1(uint32_t x){
     return (rotr(17, x) ^ rotr(19, x) ^ shr(10, x));
+}
+
+uint32_t SIG0(uint32_t x){
+    return (rotr(2, x) ^ rotr(13, x) ^ rotr(22, x));
+}
+
+uint32_t SIG1(uint32_t x){
+    return (rotr(6, x) ^ rotr(11, x) ^ rotr(25, x));
+
+}
+
+uint32_t Ch(uint32_t x, uint32_t y, uint32_t z){
+    return ((x & y) ^ ((!x) & z));
+}
+
+uint32_t Maj(uint32_t x, uint32_t y, uint32_t z){
+    return ((x & y) ^ (x & z) ^ (y & z));
 }
