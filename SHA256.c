@@ -49,7 +49,8 @@ void sha256(){
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
 
-    int t;
+    //For looping
+    int t, i;
 
     //Message schedule
     uint32_t W[64];
@@ -70,50 +71,57 @@ void sha256(){
     };
 
     //The current message block
-    uint32_t M[16];
+    //uint32_t M[16];
+    uint32_t M[16] = {0,0,0,0,0,0,0,0};
 
-    for(t = 0; t < 16; t++){
-        W[t] = M[t];
-    } 
+    for(i = 0; i < 1; i++){
 
-    for(t = 16; t < 64; t++){
-        W[t] = sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
-    }
+        for(t = 0; t < 16; t++){
+            W[t] = M[t];
+        } 
 
-    //Step 2
-    //Initialize a, b, c, d, e, g, h
-    a = H[0];
-    b = H[1];
-    c = H[2];
-    d = H[3];
-    e = H[4];
-    f = H[5];
-    g = H[6];
-    h = H[7];
+        for(t = 16; t < 64; t++){
+            W[t] = sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
+        }
 
-    //Step 3
-    for(t = 0; t < 64; t++){
-        T1 = h + SIG1(e) + Ch(e, f, g) + K[t] + W[t];
-        T2 = SIG0(a) + Maj(a, b, c);
-        h = g;
-        g = f;
-        f = e;
-        e = d + T1;
-        d = c;
-        c = b;
-        b = a;
-        a = T1 + T2;
-    }
+        //Step 2
+        //Initialize a, b, c, d, e, g, h
+        a = H[0];
+        b = H[1];
+        c = H[2];
+        d = H[3];
+        e = H[4];
+        f = H[5];
+        g = H[6];
+        h = H[7];
 
-    //Step 4
-    H[0] = a + H[0];
-    H[1] = b + H[1];
-    H[2] = a + H[2];
-    H[3] = b + H[3];
-    H[4] = a + H[4];
-    H[5] = b + H[5];
-    H[6] = a + H[6];
-    H[7] = b + H[7];
+        //Step 3
+        for(t = 0; t < 64; t++){
+            T1 = h + SIG1(e) + Ch(e, f, g) + K[t] + W[t];
+            T2 = SIG0(a) + Maj(a, b, c);
+            h = g;
+            g = f;
+            f = e;
+            e = d + T1;
+            d = c;
+            c = b;
+            b = a;
+            a = T1 + T2;
+        }
+
+        //Step 4
+        H[0] = a + H[0];
+        H[1] = b + H[1];
+        H[2] = a + H[2];
+        H[3] = b + H[3];
+        H[4] = a + H[4];
+        H[5] = b + H[5];
+        H[6] = a + H[6];
+        H[7] = b + H[7];
+
+    }//End big for
+
+printf("%x %x %x %x %x %x %x %x\n", H[0], H[1], H[2], H[3], H[4], H[5], H[6], H[7]);
 
 }
 
