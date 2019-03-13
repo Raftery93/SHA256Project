@@ -6,7 +6,11 @@
 
 void sha256();
 
+uint32_t sig0(uint32_t x);
+uint32_t sig1(uint32_t x);
 
+uint32_t rotr(uint32_t n, uint32_t x);
+uint32_t shr(uint32_t n, uint32_t x);
 
 int main(int argc, char *argv[]){
     
@@ -44,5 +48,31 @@ void sha256(){
     //The current message block
     uint32_t M[16];
 
+    for(t = 0; t<16;t++){
+        W[t] = M[t];
+    } 
 
+    for(t = 16; t<64;t++){
+        sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
+    }
+
+    
+
+}
+
+uint32_t rotr(uint32_t n, uint32_t x){
+    return (x >> n | x << (32-n));
+}
+
+uint32_t shr(uint32_t n, uint32_t x){
+    return (x >> n);
+}
+
+
+uint32_t sig0(uint32_t x){
+    return (rotr(7, x) ^ rotr(18, x) ^ shr(3, x));
+}
+
+uint32_t sig1(uint32_t x){
+    return (rotr(17, x) ^ rotr(19, x) ^ shr(10, x));
 }
