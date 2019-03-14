@@ -12,6 +12,8 @@ union msgblock {
     uint64_t s[8];
 };
 
+enum status {READ, PAD0, PAD1, FINISH};
+
 int main(int argc, char *argv[]){
     
     //Declare union
@@ -21,6 +23,8 @@ int main(int argc, char *argv[]){
     uint64_t nobytes;
     uint64_t nobits = 0;
 
+    enum status S = READ;
+
     //Create file pointer
     FILE* f;
 
@@ -28,7 +32,7 @@ int main(int argc, char *argv[]){
     f = fopen(argv[1], "r");
 
     //Loop until end of file
-    while(!feof(f)){
+    while(S == READ){
 
         //Read in bits into 64 bits
         nobytes = fread(M.e, 1, 64, f);
@@ -41,12 +45,21 @@ int main(int argc, char *argv[]){
                 M.e[nobytes] = 0x00;
             }
             M.s[7] = nobits;
+            S = FINISH;
+        } else if (nobytes < 64){
+            S = PAD0;
+            M.e[nobytes] = 0x80;
+            while(nobytes < 64){
+                nobytes = nobytes + 1;
+                M.e[nobytes] = 0x00;
+            }
         }
     }
 
     //Close file
     fclose(f);
 
+    //Output results
     for(int i = 0; i < 64; i++){
         printf("%x ", M.e[i]);
         printf("\n");
