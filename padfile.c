@@ -28,6 +28,8 @@ int main(int argc, char *argv[]){
     //Create file pointer
     FILE* f;
 
+    int i;
+
     //Open file for reading (1st command line argument)
     f = fopen(argv[1], "r");
 
@@ -59,7 +61,7 @@ int main(int argc, char *argv[]){
     }
 
     if(S == READ || S == PAD1){
-        for(int i = 0; i < 56; i++){
+        for(i = 0; i < 56; i++){
             M.e[i] = 0x00;
             M.s[7] = nobits;
         }
