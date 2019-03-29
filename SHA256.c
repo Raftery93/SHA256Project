@@ -28,23 +28,28 @@ uint32_t Maj(uint32_t x, uint32_t y, uint32_t z);
 
 void sha256(FILE *f);
 
-int nextmsgblock(FILE *f, union msgblock *M, enum status *S, int *nobits);
+int nextmsgblock(FILE *f, union msgblock *M, enum status *S, uint64_t *nobits);
+
+int LitToBigEndian(int x);
 
 int main(int argc, char *argv[]){
 
 /**
  * DO ERROR CHECKING ON OPENING FILE - EXERCISE 
  */
-    FILE* f;
-    f = fopen(argv[1], "r");
+    FILE* msgf;
+    msgf = fopen(argv[1], "r");
 
-    sha256(f);
+    sha256(msgf);
+
+    //Close file
+    fclose(msgf);
 
     return 0;
 
 }
 
-void sha256(FILE *f){
+void sha256(FILE *msgf){
 
     union msgblock M;
 
@@ -93,7 +98,7 @@ void sha256(FILE *f){
         0x5be0cd19,
     };
 
-    while(nextmsgblock(f, M, S, nobits)){
+    while(nextmsgblock(msgf, &M, &S, &nobits)){
         for(t = 0; t < 16; t++){
             W[t] = M.t[t];
         }
@@ -135,7 +140,17 @@ void sha256(FILE *f){
         H[7] = b + H[7];
 
     }
-    printf("%x %x %x %x %x %x %x %x\n", H[0], H[1], H[2], H[3], H[4], H[5], H[6], H[7]);
+    printf("Little Endian:\t %08x %08x %08x %08x %08x %08x %08x %08x\n", H[0], H[1], H[2], H[3], H[4], H[5], H[6], H[7]);
+
+    uint32_t little = 0;
+
+    printf("Big Endian:\t ");
+
+    for(int j = 0; j < 8; j++){
+        printf("%08x ",LitToBigEndian(H[j]));
+    }
+
+    //printf("\n Big_Endian    = %X\n",LitToBigEndian(H[7]));
 }
 
 uint32_t rotr(uint32_t n, uint32_t x){
@@ -172,7 +187,7 @@ uint32_t Maj(uint32_t x, uint32_t y, uint32_t z){
     return ((x & y) ^ (x & z) ^ (y & z));
 }
 
-int nextmsgblock(FILE *f, union msgblock *M, enum status *S, int *nobits){
+int nextmsgblock(FILE *msgf, union msgblock *M, enum status *S, uint64_t *nobits){
 
     uint64_t nobytes;
 
@@ -189,7 +204,7 @@ int nextmsgblock(FILE *f, union msgblock *M, enum status *S, int *nobits){
         M->s[7] = *nobits;
         *S = FINISH;
 
-        if (S == PAD1){
+        if (*S == PAD1){
             M->e[0] = 0x80;
         }
         return 1;
@@ -197,32 +212,32 @@ int nextmsgblock(FILE *f, union msgblock *M, enum status *S, int *nobits){
 
 
     
-    nobytes = fread(M->e, 1, 64, f);
-    printf("Read %211u bytes\n", nobytes);
+    nobytes = fread(M->e, 1, 64, msgf);
 
-    nobits = nobits + (nobytes * 8);
+    *nobits = *nobits + (nobytes * 8);
     if(nobytes < 56){
-        printf("I've found a block with less that 55 bytes!\n");
         M->e[nobytes] = 0x80;
         while(nobytes < 56){
             nobytes = nobytes + 1;
             M->e[nobytes] = 0x00;
         }
-        M->s[7] = nobits;
-        S = FINISH;
+        M->s[7] = *nobits;
+        *S = FINISH;
     } else if (nobytes < 64){
-        S = PAD0;
+        *S = PAD0;
         M->e[nobytes] = 0x80;
         while(nobytes < 64){
             nobytes = nobytes + 1;
             M->e[nobytes] = 0x00;
         }
-    } else if (feof(f)){
-        S = PAD1;
+    } else if (feof(msgf)){
+        *S = PAD1;
     }
 
-    //Close file
-    fclose(f);
-
     return 1;
+}
+
+int LitToBigEndian(int x)
+{
+	return (((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00) | ((x<<8) & 0x00ff0000) | ((x<<24) & 0xff000000));
 }
