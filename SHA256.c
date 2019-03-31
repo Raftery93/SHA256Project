@@ -7,24 +7,7 @@
 
 #include <stdlib.h>
 
-#include<unistd.h>
-
-#define SWAP_UINT32(x) (((x) >> 24) | (((x) & 0x00FF0000) >> 8) | (((x) & 0x0000FF00) << 8) | ((x) << 24))
-#define uchar unsigned char
-#define uint unsigned int
-
-#define DBL_INT_ADD(a,b,c) if (a > 0xffffffff - (c)) ++b; a += c;
-#define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
-#define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
-
-#define CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
-#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define EP0(x) (ROTRIGHT(x,2) ^ ROTRIGHT(x,13) ^ ROTRIGHT(x,22))
-#define EP1(x) (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25))
-#define SIG00(x) (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3))
-#define SIG01(x) (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10))
 #define IS_BIG_ENDIAN (!*(unsigned char *)&(uint16_t){1})
-
 
 #define SWAP_UINT64(x) \
         ( (((x) >> 56) & 0x00000000000000FF) | (((x) >> 40) & 0x000000000000FF00) | \
@@ -44,7 +27,7 @@ enum status {READ, PAD0, PAD1, FINISH};
 uint32_t sig0(uint32_t x);
 uint32_t sig1(uint32_t x);
 
-uint32_t rotr(uint32_t n, uint32_t x);
+uint32_t rotr(uint32_t a, uint32_t b);
 uint32_t shr(uint32_t n, uint32_t x);
 
 uint32_t SIG0(uint32_t x);
@@ -53,11 +36,13 @@ uint32_t SIG1(uint32_t x);
 uint32_t Ch(uint32_t x, uint32_t y, uint32_t z);
 uint32_t Maj(uint32_t x, uint32_t y, uint32_t z);
 
-uint64_t * sha256(FILE *f);
+void sha256(FILE *f);
 
 int nextmsgblock(FILE *f, union msgblock *M, enum status *S, uint64_t *nobits);
 
-int LitToBigEndian(int x);
+int BigEndianToLittle(int x);
+
+int LittleEndianToBig(int x);
 
 int main(int argc, char *argv[]){
 
@@ -65,15 +50,18 @@ int main(int argc, char *argv[]){
  * DO ERROR CHECKING ON OPENING FILE - EXERCISE 
  */
 
-    uint64_t  *h;
-
     FILE* msgf;
-    msgf = fopen(argv[1], "r");
 
-    h = sha256(msgf);
-    for(int i =0; i < 8; i++){
-        printf("%08llx", *(h+i));
+    if((msgf = fopen(argv[1],"r"))!=NULL){
+
+        sha256(msgf);
+
+    }else{
+        printf("Error opening the selected file!\n");
     }
+    //msgf = fopen(argv[1], "r");
+
+    //sha256(msgf);
 
     //Close file
     fclose(msgf);
@@ -82,13 +70,15 @@ int main(int argc, char *argv[]){
 
 }
 
-uint64_t * sha256(FILE *msgf){
+void sha256(FILE *msgf){
 
     union msgblock M;
 
     uint64_t nobits = 0;
 
     enum status S = READ;
+
+    int isBig = 0;
     
     //The K constants
     uint32_t K[] = {
@@ -140,16 +130,17 @@ uint64_t * sha256(FILE *msgf){
             //W[t] = M.t[t];
             if(IS_BIG_ENDIAN){
                 W[t] = M.t[t];
+                isBig = 1;
                 //printf("In is big endian");
             }else{
-                W[t] = SWAP_UINT32(M.t[t]) ;
+                W[t] = BigEndianToLittle(M.t[t]) ;
                // printf("In else swapuint32\n");
             }
         }
 
         for(t = 16; t < 64; t++){
             //W[t] = sig1(W[t-2]) + W[t-7] + sig0(W[t-15]) + W[t-16];
-            W[t] = SIG01(W[t - 2]) + W[t - 7] + SIG00(W[t - 15]) + W[t - 16];
+            W[t] = sig1(W[t - 2]) + W[t - 7] + sig0(W[t - 15]) + W[t - 16];
         }
         
         a = H[0];
@@ -164,8 +155,8 @@ uint64_t * sha256(FILE *msgf){
         for(t = 0; t < 64; t++){
             //T1 = h + SIG1(e) + Ch(e, f, g) + K[t] + W[t];
             //T2 = SIG0(a) + Maj(a, b, c);
-            T1 = h + EP1(e) + CH(e, f, g) + K[t] + W[t];
-            T2 = EP0(a) + MAJ(a, b, c);
+            T1 = h + SIG1(e) + Ch(e, f, g) + K[t] + W[t];
+            T2 = SIG0(a) + Maj(a, b, c);
             h = g;
             g = f;
             f = e;
@@ -187,21 +178,25 @@ uint64_t * sha256(FILE *msgf){
         H[7] = h + H[7];
 
     }
-    printf("Little Endian:\t %08x %08x %08x %08x %08x %08x %08x %08x\n", H[0], H[1], H[2], H[3], H[4], H[5], H[6], H[7]);
 
-    printf("Big Endian:\t ");
+    if(isBig == 1){
 
-    for(int j = 0; j < 8; j++){
-        printf("%08x ",LitToBigEndian(H[j]));
-        //list[t] =H[t];
+        printf("Big Endian:\t ");
+
+        for(int j = 0; j < 8; j++){
+            printf("%08x ",BigEndianToLittle(H[j]));
+            //list[t] =H[t];
+        }
+    }else{
+        printf("Little Endian:\t %08x %08x %08x %08x %08x %08x %08x %08x\n", H[0], H[1], H[2], H[3], H[4], H[5], H[6], H[7]);
     }
-
-return list;
     //printf("\n Big_Endian    = %X\n",LitToBigEndian(H[7]));
 }
 
-uint32_t rotr(uint32_t n, uint32_t x){
-    return (x >> n | x << (32-n));
+uint32_t rotr(uint32_t a, uint32_t b){
+    //return (x >> n | x << (32-n));
+    return (((a) >> (b)) | ((a) << (32-(b))));
+
 }
 
 uint32_t shr(uint32_t n, uint32_t x){
@@ -231,13 +226,13 @@ uint32_t SIG1(uint32_t x){
 }
 
 uint32_t Ch(uint32_t x, uint32_t y, uint32_t z){
-    return ((x & y) ^ ((!x) & z));
-    //return (((x) & (y)) ^ (~(x) & (z)));
+    //return ((x & y) ^ ((!x) & z));
+    return (((x) & (y)) ^ (~(x) & (z)));
 }
 
 uint32_t Maj(uint32_t x, uint32_t y, uint32_t z){
-    return ((x & y) ^ (x & z) ^ (y & z));
-    //return (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)));
+    //return ((x & y) ^ (x & z) ^ (y & z));
+    return (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)));
 }
 
 int nextmsgblock(FILE *msgf, union msgblock *M, enum status *S, uint64_t *nobits){
@@ -292,7 +287,7 @@ int nextmsgblock(FILE *msgf, union msgblock *M, enum status *S, uint64_t *nobits
     return 1;
 }
 
-int LitToBigEndian(int x)
+int BigEndianToLittle(int x)
 {
 	return (((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00) | ((x<<8) & 0x00ff0000) | ((x<<24) & 0xff000000));
 }
